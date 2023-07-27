@@ -1,7 +1,7 @@
 # Post Website Server - Python
 This is the server application for the Post Website, built using Python and FastAPI.
 
-You can find the client code here: [https://github.com/Zoe92R/ssr-posts-website-cleint](https://github.com/Zoe92R/ssr-posts-website-cleint). 
+You can find the client code here: [https://github.com/Zoe92R/ssr-posts-website-client](https://github.com/Zoe92R/ssr-posts-website-client). 
 
 # Prerequisites
 Before running this project, ensure you have the following prerequisites installed:
