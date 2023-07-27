@@ -15,3 +15,5 @@ To install the required dependencies, navigate to the server directory and run t
 ```bash
 python -m uvicorn main:app --reload
 ```
+
+Uvicorn will run on http://127.0.0.1:8000
