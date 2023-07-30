@@ -1,7 +1,5 @@
 import json
-from typing import List
 from fastapi import FastAPI, HTTPException, Query, Response
-from pydantic import BaseModel
 import mysql.connector
 
 from models import CreatePost, HPData, Post, PostDataRes, PostsDataRes
@@ -11,12 +9,16 @@ app = FastAPI()
 with open("data/hpdata.json", "r") as json_file:
     hp_data = json.load(json_file)
 
+# Please enter your MySQL details and ensure that you create a schema named 'post_schema'
 db_config = {
-    "host": "localhost",
-    "user": "root",
-    "password": "cFRvK#uJH?!I06",
-    "database": "post4_schema",
+    "host": "<host>",
+    "user": "<user_name>",
+    "password": "<password>",
+    "database": "post_schema", 
 }
+
+# Constant for the table name
+POSTS_TABLE = "posts_data"
 
 def get_connection():
     return mysql.connector.connect(**db_config)
@@ -39,7 +41,7 @@ def read_hp_data():
 # Get Posts list
 @app.get("/get_posts", response_model=PostsDataRes)
 def get_data_from_database():
-    query = "SELECT * FROM posts_data"
+    query = f"SELECT * FROM {POSTS_TABLE}"
     connection, cursor = execute_query(query)
     try:
         result = cursor.fetchall()
@@ -72,7 +74,7 @@ async def read_post(id: str = Query(..., description="The ID of the post to retr
     except ValueError:
         raise HTTPException(status_code=422, detail="Invalid id format")
 
-    query = "SELECT id, title, content FROM posts_data WHERE id = %s"
+    query = f"SELECT id, title, content FROM {POSTS_TABLE} WHERE id = %s"
     connection, cursor = execute_query(query, post_id)
     try:
         post = cursor.fetchone()
@@ -91,7 +93,7 @@ async def read_post(id: str = Query(..., description="The ID of the post to retr
 
 # Helper function - Get id number for new post
 def get_next_post_id():
-    query = "SELECT MAX(id) FROM posts_data"
+    query = f"SELECT MAX(id) FROM {POSTS_TABLE}"
     connection, cursor = execute_query(query)
     try:
         max_id = cursor.fetchone()[0]
@@ -104,7 +106,7 @@ def get_next_post_id():
         connection.close()
 
 # Create new post
-@app.post("/posts", response_model=PostDataRes)
+@app.post("/create_post", response_model=PostDataRes)
 async def create_post(post: CreatePost):
     try:
         connection = get_connection()
@@ -114,7 +116,7 @@ async def create_post(post: CreatePost):
         post_id = get_next_post_id()
 
         # Create a new post in the database with the generated id
-        query = "INSERT INTO posts_data (id, title, content) VALUES (%s, %s, %s)"
+        query = f"INSERT INTO {POSTS_TABLE} (id, title, content) VALUES (%s, %s, %s)"
         cursor.execute(query, (post_id, post.title, post.content))
         connection.commit()
 
@@ -129,16 +131,16 @@ async def create_post(post: CreatePost):
         connection.close()
 
 # Update post
-@app.put("/posts/{post_id}", response_model=PostDataRes)
+@app.put("/update_post/{post_id}", response_model=PostDataRes)
 async def update_post(post_id: int, post: CreatePost):
-    query = "SELECT id FROM posts_data WHERE id = %s"
+    query = f"SELECT id FROM {POSTS_TABLE} WHERE id = %s"
     connection, cursor = execute_query(query, post_id)
     try:
         existing_post = cursor.fetchone()
         if not existing_post:
             raise HTTPException(status_code=404, detail="Post not found")
 
-        query = "UPDATE posts_data SET title = %s, content = %s WHERE id = %s"
+        query = f"UPDATE {POSTS_TABLE} SET title = %s, content = %s WHERE id = %s"
         cursor.execute(query, (post.title, post.content, post_id))
         connection.commit()
 
@@ -153,14 +155,14 @@ async def update_post(post_id: int, post: CreatePost):
         connection.close()
 
 # Delete post
-@app.delete("/posts/{post_id}", response_model=dict)
+@app.delete("/delete_post/{post_id}", response_model=dict)
 async def delete_post(post_id: int):
     try:
         connection = get_connection()
         cursor = connection.cursor()
 
         # Get the post data before deleting
-        query = "SELECT id, title, content FROM posts_data WHERE id = %s"
+        query = f"SELECT id, title, content FROM {POSTS_TABLE} WHERE id = %s"
         cursor.execute(query, (post_id,))
         post_data = cursor.fetchone()
 
@@ -168,7 +170,7 @@ async def delete_post(post_id: int):
             raise HTTPException(status_code=404, detail="Post not found")
 
         # Delete the post
-        delete_query = "DELETE FROM posts_data WHERE id = %s"
+        delete_query = f"DELETE FROM {POSTS_TABLE} WHERE id = %s"
         cursor.execute(delete_query, (post_id,))
         connection.commit()
 
@@ -177,3 +179,4 @@ async def delete_post(post_id: int):
     finally:
         cursor.close()
         connection.close()
+
